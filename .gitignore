@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+src-tauri/target/
+src-tauri/gen/schemas/
+src-tauri/resources/engine/*
+src-tauri/resources/ffmpeg/*
+src-tauri/resources/exiftool/*
+!src-tauri/resources/*/.gitkeep
+__pycache__/
+*.pyc
+*.log
+.vscode/
+.DS_Store
