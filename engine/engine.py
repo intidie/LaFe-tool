@@ -24,15 +24,22 @@ from dataclasses import asdict
 from functools import lru_cache
 from pathlib import Path
 
-# Sin ventanas de consola para ffmpeg/ffprobe: el motor corre sin consola, así que cada hijo abriría la suya.
-if os.name == "nt":
-    _orig_init = subprocess.Popen.__init__
+# Procesos hijos (ffmpeg, ffprobe, PowerShell):
+# - stdin = DEVNULL: el stdin del motor es el canal de peticiones de la app. Si un ffmpeg lo hereda, lee esas
+#   peticiones como teclas (con «c» se queda esperando un comando) y el render se congela.
+# - sin ventana de consola: el motor corre sin consola, así que cada hijo abriría la suya.
+_orig_init = subprocess.Popen.__init__
 
-    def _no_window_init(self, *a, **kw):
+
+def _child_init(self, *a, **kw):
+    if kw.get("stdin") is None and kw.get("input") is None:
+        kw["stdin"] = subprocess.DEVNULL
+    if os.name == "nt":
         kw["creationflags"] = kw.get("creationflags", 0) | 0x08000000
-        _orig_init(self, *a, **kw)
+    _orig_init(self, *a, **kw)
 
-    subprocess.Popen.__init__ = _no_window_init  # type: ignore[method-assign]
+
+subprocess.Popen.__init__ = _child_init  # type: ignore[method-assign]
 
 from media import (  # noqa: E402
     ASPECT_MAP, CRF_MAP, RES_MAP, build_intervals, detect_silence, ffmpeg_available, get_duration, make_lipsync,

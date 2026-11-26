@@ -781,7 +781,7 @@ def _popen(cmd: List[str], cwd: Path, err_path: Path) -> subprocess.Popen:
         kw["creationflags"] = 0x00004000 | 0x08000000      # prioridad baja + sin ventana
     else:
         kw["preexec_fn"] = lambda: os.nice(5)
-    return subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.DEVNULL, stderr=open(err_path, "w"), **kw)
+    return subprocess.Popen(cmd, cwd=cwd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=open(err_path, "w"), **kw)
 
 
 def _frames_done(p: Path) -> int:
@@ -813,7 +813,7 @@ def render_captions(
     for i in range(n):
         s, e = bounds[i], bounds[i + 1]
         cmd = [
-            "ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-nostats", "-progress", f"p{i}.txt",
+            "ffmpeg", "-nostdin", "-y", "-hide_banner", "-loglevel", "error", "-nostats", "-progress", f"p{i}.txt",
             "-f", "lavfi", "-i", f"color=c={CHROMA_BG}:s={width}x{height}:r={fps}",
             "-vf", make_vf(width, height, c["pix"], fonts_dir, cap, style, s / fps),
             "-frames:v", str(e - s), *c["vargs"], *(["-crf", str(crf)] if c["uses_crf"] else []),
