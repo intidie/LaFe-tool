@@ -7,6 +7,7 @@ import { Bind, Button, Card, NumberIn, Notice, Row, Select, Slider } from "./ui"
 export function ScriptVoice({ b, meta }: { b: Bind; meta: Meta }) {
   const { s } = b;
   const robot = s.voice === meta.robot_entry;
+  const windows = (meta.sapi_voices ?? []).includes(s.voice);
   const [sample, setSample] = useState<string>("");
   const [busy, setBusy] = useState<"" | "sample" | "mp3">("");
   const [err, setErr] = useState("");
@@ -39,11 +40,11 @@ export function ScriptVoice({ b, meta }: { b: Bind; meta: Meta }) {
   };
 
   return (
-    <Card title="Guion y voz" icon="✍️" aside={<span className="muted">{words} palabras</span>}>
+    <Card title="Guion y voz" aside={<span className="muted">{words} palabras</span>}>
       <textarea className="script" value={s.script} placeholder="Escribe o pega aquí el guion…"
         onChange={(e) => b.set("script", e.target.value)} />
       <div className="btn-row">
-        <Button kind="ghost" onClick={loadTxt}>📄 Cargar guion (.txt)</Button>
+        <Button kind="ghost" onClick={loadTxt}>Cargar guion (.txt)</Button>
       </div>
       <Select b={b} k="voice" label="Voz" options={meta.options.voice} />
       {robot ? (
@@ -62,12 +63,15 @@ export function ScriptVoice({ b, meta }: { b: Bind; meta: Meta }) {
       ) : (
         <Row>
           <Slider b={b} k="speed" label="Velocidad" min={-50} max={50} step={5} unit=" %" />
-          <Slider b={b} k="pitch" label="Tono" min={-50} max={50} step={5} unit=" Hz" />
+          <Slider b={b} k="pitch" label="Tono" min={-50} max={50} step={5} unit=" Hz" disabled={windows}
+            hint={windows ? "Las voces de Windows no permiten cambiar el tono" : undefined} />
         </Row>
       )}
+      <p className="muted small">Las voces «Windows» son las SAPI instaladas en el equipo (Microsoft, Loquendo, etc.).
+        Una voz instalada después aparece al reiniciar la app.</p>
       <Row>
-        <Button full busy={busy === "sample"} onClick={() => run("sample")}>🔊 Probar voz (12 palabras)</Button>
-        <Button full busy={busy === "mp3"} onClick={() => run("mp3")}>🎙️ Generar solo el audio (MP3)</Button>
+        <Button full busy={busy === "sample"} onClick={() => run("sample")}>Probar voz (12 palabras)</Button>
+        <Button full busy={busy === "mp3"} onClick={() => run("mp3")}>Generar solo el audio (MP3)</Button>
       </Row>
       {sample && <audio src={sample} controls autoPlay style={{ width: "100%" }} />}
       {mp3 && <Result r={mp3} />}

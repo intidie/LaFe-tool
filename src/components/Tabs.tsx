@@ -48,7 +48,7 @@ function PickFile({ label, value, onPick, exts, kind }: {
       <div className="pick">
         <span className={`pick-name ${value ? "" : "muted"}`} title={value}>{value ? name(value) : "Ningún archivo"}</span>
         <Button kind="ghost" onClick={pick}>Elegir…</Button>
-        {value && <Button kind="ghost" onClick={() => onPick("")}>✕</Button>}
+        {value && <Button kind="ghost" onClick={() => onPick("")}>Quitar</Button>}
       </div>
     </div>
   );
@@ -68,7 +68,7 @@ export function SubtitlesTab({ b, meta, onFonts }: { b: Bind; meta: Meta; onFont
     <div className="split">
       <div className="controls">
         <ScriptVoice b={b} meta={meta} />
-        <Card title="Audio del video" icon="🎧">
+        <Card title="Audio del video">
           <div className="segmented">
             {[meta.src_tts, meta.src_upload].map((o) => (
               <button key={o} className={s.src_mode === o ? "active" : ""} onClick={() => b.set("src_mode", o)}>{o}</button>
@@ -119,12 +119,12 @@ function ImageList({ title, list, setList }: { title: string; list: string[]; se
   };
   return (
     <div className="imglist">
-      <div className="imglist-head"><b>{title}</b><Button kind="ghost" onClick={add}>＋ Añadir</Button></div>
+      <div className="imglist-head"><b>{title}</b><Button kind="ghost" onClick={add}>Añadir</Button></div>
       <div className="thumbs">
         {list.map((p, i) => (
           <figure key={p + i} className="thumb" title={p}>
             <img src={convertFileSrc(p)} alt="" />
-            <button onClick={() => setList(list.filter((_, j) => j !== i))}>✕</button>
+            <button onClick={() => setList(list.filter((_, j) => j !== i))}>Quitar</button>
           </figure>
         ))}
         {!list.length && <span className="muted small">Sin imágenes</span>}
@@ -145,14 +145,14 @@ export function LipSyncTab({ b, meta }: { b: Bind; meta: Meta }) {
   return (
     <div className="split">
       <div className="controls">
-        <Card title="Imágenes" icon="🖼️">
+        <Card title="Imágenes">
           <p className="muted small">Alterna imágenes «hablando» y «silencio» según el audio. Sin audio propio, usa la voz del guion.</p>
           <Row>
             <ImageList title="Hablando" list={talking} setList={setTalking} />
             <ImageList title="Silencio" list={silent} setList={setSilent} />
           </Row>
         </Card>
-        <Card title="Audio" icon="🎧">
+        <Card title="Audio">
           <PickFile label="Audio propio (opcional)" value={s.ls_audio} onPick={(p) => b.set("ls_audio", p)} exts={["mp3", "wav", "m4a"]} kind="Audio" />
           <Row>
             <Slider b={b} k="ls_noise" label="Umbral de ruido" min={-50} max={-10} unit=" dB" hint="Más alto: evita falsos positivos por ruido." />
@@ -228,7 +228,6 @@ export function CleanerTab({ exiftool, active }: { exiftool: boolean; active: bo
       <div className={`dropzone ${hover ? "hover" : ""}`} onClick={pick}>
         {busy ? <><span className="spinner" /> Limpiando…</> : (
           <>
-            <div className="drop-icon">🧹</div>
             <div><b>Arrastra aquí videos, audios o imágenes</b> o haz clic para elegirlos</div>
             <div className="muted small">ExifCleaner: se borran todos los metadatos (EXIF, XMP, QuickTime, fechas, GPS…) y se sobrescribe el archivo.</div>
           </>
@@ -245,7 +244,7 @@ export function CleanerTab({ exiftool, active }: { exiftool: boolean; active: bo
                 <td title={r.path}>{name(r.path)}</td>
                 <td>{r.before}</td>
                 <td>{r.ok ? r.after : "—"}</td>
-                <td>{r.ok ? <span className="ok">✓ Limpio</span> : <span className="bad" title={r.error ?? ""}>✕ {r.error}</span>}</td>
+                <td>{r.ok ? <span className="ok">Limpio</span> : <span className="bad" title={r.error ?? ""}>Error: {r.error}</span>}</td>
               </tr>
             ))}
           </tbody>

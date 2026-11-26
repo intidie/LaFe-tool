@@ -14,15 +14,22 @@ export default function App() {
   const [tab, setTab] = useState<Tab>("sub");
   const [panel, setPanel] = useState(false);
   const [fatal, setFatal] = useState("");
+  const [fontsMsg, setFontsMsg] = useState("");
   const saveTimer = useRef<number>();
 
   useEffect(() => {
     (async () => {
       try {
         const [m, i, saved] = await Promise.all([engine<Meta>("meta"), api.appInfo(), api.loadSettings()]);
-        setMeta(m);
         setInfo(i);
-        setS(mergeSettings(m, saved));
+        const merged = mergeSettings(m, saved);
+        setS(merged);
+        // Fuentes de la carpeta propia (p. ej. Stamp RSPK): se importan en cada arranque.
+        if (merged.fonts_folder) {
+          const fonts = await importFonts(merged.fonts_folder);
+          if (fonts) m.fonts = fonts;
+        }
+        setMeta(m);
       } catch (e) {
         setFatal(String(e));
       }
@@ -35,6 +42,21 @@ export default function App() {
     window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => api.saveSettings(s).catch(() => {}), 400);
   }, [s]);
+
+  async function importFonts(folder: string): Promise<string[] | null> {
+    try {
+      const fams = await api.importFontFolder(folder);
+      setFontsMsg(fams.length ? `Importadas: ${fams.join(", ")}` : "La carpeta no tiene fuentes .ttf/.otf.");
+      return (await engine<{ fonts: string[] }>("fonts")).fonts;
+    } catch (e) {
+      setFontsMsg(`No se pudo importar: ${e}`);
+      return null;
+    }
+  }
+  const syncFonts = async (folder: string) => {
+    const fonts = await importFonts(folder);
+    if (fonts) setMeta((m) => (m ? { ...m, fonts } : m));
+  };
 
   const set = useCallback((k: string, v: unknown) => setS((old) => (old ? { ...old, [k]: v } : old)), []);
 
@@ -56,7 +78,14 @@ export default function App() {
     const d = await open({ directory: true, defaultPath: s.out_dir || info.default_output });
     if (typeof d === "string") set("out_dir", d);
   };
-  const reset = () => setS({ ...meta.defaults, script: s.script });
+  const reset = () => setS({ ...meta.defaults, script: s.script, fonts_folder: s.fonts_folder });
+  const pickFontsFolder = async () => {
+    const d = await open({ directory: true, defaultPath: s.fonts_folder || undefined });
+    if (typeof d === "string") {
+      set("fonts_folder", d);
+      await syncFonts(d);
+    }
+  };
 
   return (
     <div className="app">
@@ -69,9 +98,9 @@ export default function App() {
         </nav>
         <div className="topbar-right">
           <span className={`chip ${s.clean_meta ? "on" : ""}`} title="Limpieza automática con ExifCleaner al exportar">
-            🧹 {s.clean_meta ? "Metadatos limpios" : "Sin limpiar"}
+            {s.clean_meta ? "ExifCleaner activo" : "ExifCleaner apagado"}
           </span>
-          <Button kind="ghost" onClick={() => setPanel(!panel)}>⚙ Ajustes</Button>
+          <Button kind="ghost" onClick={() => setPanel(!panel)}>Ajustes</Button>
         </div>
       </header>
 
@@ -93,13 +122,19 @@ export default function App() {
             <Toggle b={b} k="clean_meta" label="Limpiar metadatos al exportar (ExifCleaner)" />
             <p className="muted small">Cada video y audio exportado pasa por ExifCleaner (ExifTool): se borran todas las
               etiquetas y las fechas de QuickTime, sin recodificar.
-              {info.exiftool ? " ExifTool: ✓ disponible." : " ⚠ ExifTool no encontrado."}</p>
+              {info.exiftool ? " ExifTool: disponible." : " ExifTool no encontrado."}</p>
             <Select b={b} k="prev_size" label="Tamaño de la vista previa" options={meta.options.prev_size} />
             <div className="field">
-              <span className="field-label">Fuentes subidas</span>
-              <div className="btn-row"><Button kind="ghost" onClick={() => api.openPath(info.fonts_dir)}>Abrir carpeta de fuentes</Button></div>
+              <span className="field-label">Carpeta de fuentes propias (se importan al abrir la app)</span>
+              <div className="pick">
+                <span className={`pick-name ${s.fonts_folder ? "" : "muted"}`} title={s.fonts_folder}>{s.fonts_folder || "Ninguna"}</span>
+                <Button kind="ghost" onClick={pickFontsFolder}>Elegir…</Button>
+                {s.fonts_folder && <Button kind="ghost" onClick={() => set("fonts_folder", "")}>Quitar</Button>}
+              </div>
+              {fontsMsg && <p className="muted small">{fontsMsg}</p>}
+              <div className="btn-row"><Button kind="ghost" onClick={() => api.openPath(info.fonts_dir)}>Abrir carpeta de fuentes instaladas</Button></div>
             </div>
-            <Button kind="danger" onClick={reset}>↺ Restablecer valores de fábrica</Button>
+            <Button kind="danger" onClick={reset}>Restablecer valores de fábrica</Button>
             <p className="muted small">La última configuración usada se guarda sola y se restaura al abrir la app.</p>
             <p className="muted small">LaFe Tool v{info.version}{info.bundled_ffmpeg ? "" : " · FFmpeg del sistema"}</p>
           </aside>
@@ -119,8 +154,8 @@ export default function App() {
 function Logo() {
   return (
     <div className="logo">
-      <span className="logo-mark">LF</span>
-      <span className="logo-text">LaFe <b>Tool</b></span>
+      <span className="logo-mark"><span>SUB</span></span>
+      <span className="logo-text">LaFe Tool</span>
     </div>
   );
 }

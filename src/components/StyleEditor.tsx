@@ -25,10 +25,10 @@ export function StyleEditor({ b, meta, onFonts }: { b: Bind; meta: Meta; onFonts
 
   return (
     <>
-      <Card title="Fuente y texto" icon="🔤">
+      <Card title="Fuente y texto">
         <Row cols="1fr auto">
           <Select b={b} k="font" label="Fuente" options={meta.fonts} disabled={meme} />
-          <div className="field end"><Button kind="ghost" onClick={uploadFonts} title=".zip con fuentes, .ttf u .otf">⬆ Subir fuente (.zip)</Button></div>
+          <div className="field end"><Button kind="ghost" onClick={uploadFonts} title=".zip con fuentes, .ttf u .otf">Subir fuente (.zip)</Button></div>
         </Row>
         {fontMsg && <Notice kind={fontMsg.ok ? "ok" : "error"}>{fontMsg.text}</Notice>}
         {s.font === meta.other_font && !meme && (
@@ -46,11 +46,11 @@ export function StyleEditor({ b, meta, onFonts }: { b: Bind; meta: Meta; onFonts
         </Row>
         {poster && !meme && (
           <p className="muted small">Con «Estilo cartel» activo se ignoran negrita, cursiva, mayúsculas, relleno, trazo, fondo,
-            sombra, escalas, tracking, interlineado y resaltado (los fija el cartel).</p>
+            sombra y resaltado (los fija el cartel). «Transformar» sí se aplica sobre el cartel.</p>
         )}
       </Card>
 
-      <Card title="Rellenar · Trazo · Fondo · Sombra" icon="🎨">
+      <Card title="Rellenar · Trazo · Fondo · Sombra">
         <ColorToggle b={b} k="fill" label="Rellenar" />
         <ColorToggle b={b} k="stroke" label="Trazo (contorno exterior)" disabled={meme} />
         <NumberIn b={b} k="stroke" label="Grosor del trazo (px)" min={0} max={30} step={0.5} disabled={!s.stroke_on || meme} />
@@ -71,7 +71,7 @@ export function StyleEditor({ b, meta, onFonts }: { b: Bind; meta: Meta; onFonts
         </div>
       </Card>
 
-      <Card title="Bloques y animación" icon="✨">
+      <Card title="Bloques y animación">
         <Row>
           <Slider b={b} k="words" label="Palabras por bloque" min={1} max={4} />
           <Slider b={b} k="chars" label="Máx. caracteres por línea" min={6} max={24} />
@@ -91,7 +91,7 @@ export function StyleEditor({ b, meta, onFonts }: { b: Bind; meta: Meta; onFonts
         </Row>
       </Card>
 
-      <Card title="Mosaico (solo sobre el subtítulo)" icon="🧩" defaultOpen={false}>
+      <Card title="Mosaico (solo sobre el subtítulo)" defaultOpen={false}>
         <Select b={b} k="mosaic" label="Efecto mosaico" options={meta.options.mosaic} />
         <Row>
           <Slider b={b} k="mosaic_px" label="Tamaño del mosaico" min={4} max={120} unit=" px" disabled={s.mosaic === "Sin mosaico"} />
@@ -100,7 +100,7 @@ export function StyleEditor({ b, meta, onFonts }: { b: Bind; meta: Meta; onFonts
         </Row>
       </Card>
 
-      <Card title="Estilos especiales" icon="🪧">
+      <Card title="Estilos especiales">
         <h4>Estilo cartel (SADE · SUPER STAR · INTI-NET)</h4>
         <Row cols="1fr 1fr 1fr">
           <Check b={b} k="poster" label="Estilo cartel serif" disabled={meme} />
@@ -123,15 +123,19 @@ export function StyleEditor({ b, meta, onFonts }: { b: Bind; meta: Meta; onFonts
         )}
       </Card>
 
-      <Card title="Transformar (valores de Premiere Pro)" icon="📐" defaultOpen={false}>
+      <Card title="Transformar (valores de Premiere Pro)" defaultOpen={false}>
         <Row>
-          <NumberIn b={b} k="sx" label="Escala horizontal (%)" min={10} max={600} disabled={meme} />
-          <NumberIn b={b} k="sy" label="Escala vertical (%)" min={10} max={600} disabled={meme} />
-          <NumberIn b={b} k="track" label="Tracking" min={-500} max={500} disabled={meme} />
-          <NumberIn b={b} k="lead" label="Interlineado" min={-300} max={300} disabled={meme} />
-          <NumberIn b={b} k="px" label="Posición X (sobre 1080)" min={0} max={4000} disabled={meme} />
-          <NumberIn b={b} k="py" label="Posición Y (sobre 1920)" min={0} max={4000} disabled={meme} />
+          <NumberIn b={b} k="sx" label="Escala horizontal (%)" min={10} max={600} />
+          <NumberIn b={b} k="sy" label="Escala vertical (%)" min={10} max={600} />
+          <NumberIn b={b} k="track" label="Tracking" min={-500} max={500} />
+          <NumberIn b={b} k="lead" label="Interlineado" min={-300} max={300} />
+          <NumberIn b={b} k="px" label="Posición X (sobre 1080)" min={0} max={4000} />
+          <NumberIn b={b} k="py" label="Posición Y (sobre 1920)" min={0} max={4000} />
         </Row>
+        {(poster || meme) && (
+          <p className="muted small">En los estilos cartel y meme estos valores se aplican sobre las proporciones del estilo:
+            con los valores de fábrica se ve igual; al cambiarlos se escala, separa o mueve respecto a él.</p>
+        )}
       </Card>
     </>
   );

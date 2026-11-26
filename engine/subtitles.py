@@ -213,6 +213,9 @@ def synthesize_with_timings(text: str, voice: str, rate: str, pitch: str, out_pa
     from robot_tts import is_robot, synthesize_robot   # import tardío: robot_tts importa este módulo
     if is_robot(voice):
         return synthesize_robot(text, voice, rate, pitch, out_path)
+    from sapi_tts import is_sapi, synthesize_sapi
+    if is_sapi(voice):
+        return synthesize_sapi(text, voice, rate, out_path)
     tokens = tokenize(text)
     events = asyncio.run(_tts_stream(text, voice, rate, pitch, "WordBoundary", str(out_path)))
     words = [
@@ -308,16 +311,29 @@ def _rounded_rect(w: float, h: float, r: float) -> str:
     )
 
 
+# Valores de «Transformar» de fábrica: los estilos especiales aplican lo que el usuario cambie respecto a ellos.
+T_DEF = CaptionStyle()
+
+
+def transform_delta(style: CaptionStyle) -> Tuple[float, float, float, float, float, float]:
+    """(escala X, escala Y, tracking extra, interlineado extra, desplazamiento X, desplazamiento Y) respecto a fábrica.
+    Las escalas son factores (1.0 = sin cambio); tracking en milésimas de em; el resto en unidades de 1080x1920."""
+    return (style.scale_x / T_DEF.scale_x, style.scale_y / T_DEF.scale_y, style.tracking - T_DEF.tracking,
+            style.leading - T_DEF.leading, style.pos_x - T_DEF.pos_x, style.pos_y - T_DEF.pos_y)
+
+
 def apply_poster(style: CaptionStyle) -> CaptionStyle:
-    """Estilo cartel: negrita condensada y alta, recuadro sólido; invert = blanco sobre negro."""
+    """Estilo cartel: negrita condensada y alta, recuadro sólido; invert = blanco sobre negro.
+    «Transformar» se aplica sobre las proporciones del cartel (con los valores de fábrica se ve igual)."""
     if not style.poster:
         return style
     ink, paper = ("#FFFFFF", "#000000") if style.invert else ("#000000", "#FFFFFF")
+    kx, ky, dt, dl, _, _ = transform_delta(style)
     return replace(
         style, italic=False, bold=True, uppercase=True, fill_on=True, fill=ink,
         stroke_on=True, stroke=ink, stroke_px=2.0, box_on=True, box_color=paper, box_opacity=100.0,
-        box_pad=14.0, box_radius=0.0, shadow_on=False, scale_x=70.0, scale_y=170.0,
-        tracking=-20.0, leading=-45.0, highlight=False,
+        box_pad=14.0, box_radius=0.0, shadow_on=False, scale_x=70.0 * kx, scale_y=170.0 * ky,
+        tracking=-20.0 + dt, leading=-45.0 + dl, highlight=False,
     )
 
 
@@ -376,11 +392,13 @@ def meme_font(fonts_dir: Optional[Path]) -> Tuple[str, bool]:
 def build_ass_meme(words: Sequence[Word], style: CaptionStyle, width: int, height: int, total_duration: float,
                    fonts_dir: Optional[Path] = None) -> Captions:
     """Estilo meme: líneas apretadas, palabras repartidas de borde a borde de la pantalla, sin animación."""
-    cond = max(30.0, style.meme_condense) / 100.0
+    kx, ky, dt, dl, dx, dy = transform_delta(style)
+    cond = max(30.0, style.meme_condense) / 100.0 * kx              # «Escala horizontal» ensancha la letra
+    off_x, off_y = dx / REF_W * width, dy / REF_H * height           # «Posición» desplaza el bloque
     font, bold = (style.meme_font, style.bold) if style.meme_font else meme_font(fonts_dir)
     fm = get_font_metrics(font, bold, False, fonts_dir)
     avail = width * max(30.0, min(100.0, style.meme_width)) / 100.0
-    margin = (width - avail) / 2.0                                    # bloque y marco siempre centrados
+    margin = (width - avail) / 2.0 + off_x                           # bloque y marco centrados (+ posición)
     flags = f"{-1 if bold else 0},0,0,0"
     blocks = make_blocks(words, max(1, style.words_per_block), style.uppercase, not style.meme)
     events: List[str] = []
@@ -397,16 +415,17 @@ def build_ass_meme(words: Sequence[Word], style: CaptionStyle, width: int, heigh
         spans.append((b_start, b_end))
 
         lines = wrap_lines(blk, max(style.max_chars_line, 1))
-        wid = lambda t, s: text_width_em(fm, t) * s * cond            # ancho en px de t con tamaño s
+        # ancho en px de t con tamaño s (incluye el tracking extra entre letras)
+        wid = lambda t, s: (text_width_em(fm, t) * cond + max(0, len(t) - 1) * dt / 1000.0) * s
         # Tamaño: que la línea más ancha (con espacios normales) llene la pantalla; tope por alto.
         nat = max(wid(" ".join(blk[i].text for i in idx), 1.0) for idx in lines) or 1.0
-        size = min(avail / nat, 0.30 * height, 0.85 * height / (len(lines) * 0.95))
-        pitch = size * (fm.cap_top + fm.desc_bottom + 0.10)           # líneas muy juntas
-        y0 = height / 2.0
+        size = min(avail / nat, 0.30 * height / ky, 0.85 * height / (len(lines) * 0.95 * ky))
+        pitch = size * ky * (fm.cap_top + fm.desc_bottom + 0.10) + dl / REF_H * height   # líneas muy juntas
+        y0 = height / 2.0 + off_y
         line_y = [y0 + (li - (len(lines) - 1) / 2.0) * pitch for li in range(len(lines))]
         s_pt = size * fm.cell
-        top = line_y[0] + (fm.ascent - fm.cell / 2.0) * size - fm.cap_top * size
-        bottom = line_y[-1] + (fm.ascent - fm.cell / 2.0) * size + fm.desc_bottom * size
+        top = line_y[0] + ((fm.ascent - fm.cell / 2.0) - fm.cap_top) * size * ky
+        bottom = line_y[-1] + ((fm.ascent - fm.cell / 2.0) + fm.desc_bottom) * size * ky
         pad = style.box_pad * min(width, height) / 1080.0
         if style.box_on:
             top, bottom = top - pad, bottom + pad
@@ -433,7 +452,8 @@ def build_ass_meme(words: Sequence[Word], style: CaptionStyle, width: int, heigh
             for t, x in zip(ws, xs):
                 events.append(
                     f"Dialogue: 1,{_ts(b_start)},{_ts(b_end)},Meme,,0,0,0,,"
-                    f"{{\\an4\\pos({_f(x)},{_f(line_y[li])})\\fs{_f(s_pt)}\\fscx{_f(cond * 100)}}}{t}"
+                    f"{{\\an4\\pos({_f(x)},{_f(line_y[li])})\\fs{_f(s_pt)}\\fscx{_f(cond * 100)}\\fscy{_f(ky * 100)}"
+                    f"\\fsp{_f(dt / 1000.0 * size)}}}{t}"
                 )
         size_ref = max(size_ref, s_pt)
     header = (

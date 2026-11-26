@@ -5,6 +5,7 @@ export type Settings = Record<string, any>;
 
 export interface Meta {
   defaults: Settings;
+  sapi_voices: string[];
   options: Record<string, (string | number)[]>;
   fonts: string[];
   other_font: string;
@@ -64,6 +65,7 @@ export const api = {
   saveRobotWavs: (wavs: string[]) => invoke<string>("save_robot_wavs", { wavs }),
   openPath: (path: string, reveal = false) => invoke<void>("open_path", { path, reveal }),
   ensureDir: (path: string) => invoke<string>("ensure_dir", { path }),
+  importFontFolder: (folder: string) => invoke<string[]>("import_font_folder", { folder }),
 };
 
 export function onProgress(tag: string, cb: (value: number, msg: string) => void) {

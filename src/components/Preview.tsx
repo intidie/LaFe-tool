@@ -95,8 +95,8 @@ export function Preview({ s }: { s: Settings }) {
       )}
       <div className="btn-row">
         {showClip
-          ? <Button full onClick={() => setClip(null)}>⏸ Volver al fotograma</Button>
-          : <Button full busy={clipBusy} onClick={playClip}>▶ Reproducir animaciones</Button>}
+          ? <Button full onClick={() => setClip(null)}>Volver al fotograma</Button>
+          : <Button full busy={clipBusy} onClick={playClip}>Reproducir animaciones</Button>}
       </div>
       {prev?.warnings.map((w) => <Notice key={w} kind="warn">{w}</Notice>)}
       {err && <Notice kind="error"><pre>{err}</pre></Notice>}

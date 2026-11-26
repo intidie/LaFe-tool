@@ -89,6 +89,19 @@ fn install_fonts(app: AppHandle, files: Vec<String>) -> Result<Vec<String>, Stri
     Ok(fams)
 }
 
+/// Importa todas las fuentes de una carpeta (p. ej. la colección Stamp RSPK del usuario). Se llama en cada arranque.
+#[tauri::command]
+fn import_font_folder(app: AppHandle, folder: String) -> Result<Vec<String>, String> {
+    let entries = std::fs::read_dir(&folder).map_err(|e| format!("No se pudo abrir {folder}: {e}"))?;
+    let files: Vec<String> = entries
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.is_file())
+        .map(|p| p.to_string_lossy().into_owned())
+        .collect();
+    fonts::install(&files, &paths(&app).fonts)
+}
+
 #[tauri::command]
 fn load_settings(app: AppHandle) -> Value {
     std::fs::read_to_string(&paths(&app).settings)
@@ -170,6 +183,7 @@ pub fn run() {
             engine,
             clean_files,
             install_fonts,
+            import_font_folder,
             load_settings,
             save_settings,
             read_text_file,

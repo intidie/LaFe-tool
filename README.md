@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/intidie/LaFe-tool/releases/latest/download/LaFe-Tool-Setup.exe">
-    <img alt="Descargar LaFe Tool para Windows" src="https://img.shields.io/badge/%E2%AC%87%20Descargar%20LaFe%20Tool-Windows%20.exe-5B6CFF?style=for-the-badge&logo=windows11&logoColor=white" height="52">
+    <img alt="Descargar LaFe Tool para Windows" src="https://img.shields.io/badge/Descargar%20LaFe%20Tool-Windows%20.exe-00008B?style=for-the-badge&logo=windows11&logoColor=white" height="52">
   </a>
 </p>
 
@@ -32,16 +32,22 @@ firmado). Para actualizar, descarga e instala la versión nueva: tus ajustes y t
 
 ## Qué hace
 
-**Subtítulos estilo cartel.** Escribe o carga el guion, elige una voz (Edge TTS o robótica con meSpeak) y genera un
+**Subtítulos estilo cartel.** Escribe o carga el guion, elige una voz (Edge TTS, voces de Windows o robótica con meSpeak) y genera un
 video con subtítulos palabra por palabra sobre pantalla azul oscura (`#00008B`), listo para **Ultra Key** en
 Premiere Pro.
 - Vista previa en tiempo real, cuadro a cuadro, y reproducción de las animaciones.
 - Animaciones de entrada y salida, movimiento continuo, mosaico solo sobre el subtítulo, estilo cartel, estilo meme,
   granulado, resaltado de la palabra activa y valores de *Transformar* de Premiere.
-- **Subir fuentes** desde un `.zip` (o `.ttf`/`.otf`): quedan instaladas en la app para siempre.
+- **Subir fuentes** desde un `.zip` (o `.ttf`/`.otf`): quedan instaladas en la app para siempre. En *Ajustes →
+  Carpeta de fuentes propias* puedes elegir una carpeta (por ejemplo tu colección Stamp RSPK) que se importa en cada arranque.
+- *Transformar* (escala, tracking, interlineado y posición) también funciona en los estilos cartel y meme.
 - La **última configuración** se guarda sola y se restaura al abrir.
 - Exporta en **H.264/MP4**, **ProRes 422 HQ** o **DNxHR HQ**, todos compatibles con Premiere Pro (BT.709, fps
   constante, audio a 48 kHz, GOP corto para navegar fluido en la línea de tiempo).
+
+**Voces de Windows (SAPI 5).** Todas las voces SAPI instaladas en el equipo aparecen como «Windows · …», de 64 y de
+32 bits, con tiempos exactos por palabra. Así se usan voces clásicas como **Loquendo** si las tienes instaladas en
+Windows (LaFe Tool no las incluye: son software comercial con su propia licencia).
 
 **Lip-sync (PNGtuber).** Alterna imágenes «hablando» y «silencio» según el audio (propio o generado con la voz).
 
@@ -88,4 +94,4 @@ compila y publica `LaFe-Tool-Setup.exe` en [Releases](https://github.com/intidie
 
 Código de LaFe Tool: MIT. Componentes incluidos: ExifCleaner (MIT, método de limpieza), ExifTool (Phil Harvey, licencia
 de Perl), FFmpeg (GPL, build de BtbN), meSpeak.js (GPL) y fuentes con licencia OFL. Ver
-[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). La fuente «Stamp RSPK» no se distribuye: súbela tú desde la app.
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). La fuente «Stamp RSPK» no se distribuye (su licencia lo prohíbe): impórtala desde tu propia copia.

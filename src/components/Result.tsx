@@ -12,7 +12,7 @@ export function Result({ r }: { r: JobResult }) {
         <div className="path">{r.path}</div>
       </Notice>
       {c && (c.ok
-        ? <Notice kind="ok">🧹 ExifCleaner: {c.before} etiquetas de metadatos → {c.after}</Notice>
+        ? <Notice kind="ok">ExifCleaner: {c.before} etiquetas de metadatos → {c.after}</Notice>
         : <Notice kind="warn">ExifCleaner no pudo limpiar el archivo: {c.error}</Notice>)}
       {ext === "mp4" && <video className="result-video" src={convertFileSrc(r.path)} controls />}
       {ext === "mp3" && <audio src={convertFileSrc(r.path)} controls style={{ width: "100%" }} />}

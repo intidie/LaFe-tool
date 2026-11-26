@@ -41,6 +41,7 @@ from media import (  # noqa: E402
 from robot_tts import (  # noqa: E402
     ROBOT_DEFAULTS, ROBOT_ENTRY, ROBOT_LANGS, ROBOT_VARIANTS, ROBOT_WAV_DIR, make_robot_id,
 )
+from sapi_tts import list_voices as sapi_voices  # noqa: E402
 from subtitles import (  # noqa: E402
     CODECS, ENTRY_STYLES, EXIT_STYLES, MOSAIC_MODES, MOTION_STYLES, CaptionStyle, Word, _font_info, _metrics,
     block_duration_ms, estimate_word_timings, font_substitutions, list_font_families, name_from_text,
@@ -81,7 +82,7 @@ DEFAULTS = {
     "crf": "Máxima (CRF 18)", "inc_audio": True,
     "ls_audio": "", "ls_noise": -35, "ls_minsil": 0.10, "ls_res": "1080p Full HD (1920x1080)",
     "ls_aspect": "16:9 (Horizontal)", "ls_fps": 30, "ls_crf": "Alta (CRF 23)",
-    "out_dir": "", "clean_meta": True, "prev_size": "Grande",
+    "out_dir": "", "fonts_folder": "", "clean_meta": True, "prev_size": "Grande",
 }
 OPTIONS = {
     "voice": list(VOICES) + [ROBOT_ENTRY], "r_lang": list(ROBOT_LANGS), "r_variant": list(ROBOT_VARIANTS),
@@ -90,6 +91,11 @@ OPTIONS = {
     "fps": [24, 30, 60], "codec": list(CODECS), "crf": list(CRF_MAP), "ls_res": list(RES_MAP),
     "ls_aspect": list(ASPECT_MAP), "ls_fps": [24, 30, 60], "ls_crf": list(CRF_MAP), "prev_size": list(PREV_SIZES),
 }
+
+def refresh_voice_options() -> None:
+    """Añade al menú las voces SAPI instaladas en Windows (Loquendo, Microsoft…), entre Edge y la robótica."""
+    OPTIONS["voice"] = list(VOICES) + list(sapi_voices()) + [ROBOT_ENTRY]
+
 
 FONTS_DIR = Path(".")
 TEMP_DIR = Path(tempfile.gettempdir()) / "lafe-tool"
@@ -141,6 +147,9 @@ def style_of(s: dict) -> CaptionStyle:
 
 
 def voice_args(s: dict) -> tuple:
+    sapi = sapi_voices()
+    if s["voice"] in sapi:
+        return sapi[s["voice"]], f"{s['speed']:+d}%", ""
     if s["voice"] == ROBOT_ENTRY:
         return make_robot_id(s["r_lang"], s["r_variant"], s["r_amp"], s["r_pitch"], s["r_speed"], s["r_gap"]), "", ""
     return VOICES[s["voice"]], f"{s['speed']:+d}%", f"{s['pitch']:+d}Hz"
@@ -209,7 +218,8 @@ def job_dir() -> Path:
 # Comandos
 # --------------------------------------------------------------------------- #
 def cmd_meta(a, say):
-    return {"defaults": DEFAULTS, "options": OPTIONS, "fonts": font_list(), "other_font": OTHER_FONT,
+    refresh_voice_options()
+    return {"sapi_voices": list(sapi_voices()), "defaults": DEFAULTS, "options": OPTIONS, "fonts": font_list(), "other_font": OTHER_FONT,
             "auto_font": AUTO_FONT, "robot_entry": ROBOT_ENTRY, "src_tts": SRC_TTS, "src_upload": SRC_UPLOAD,
             "robot_langs": ROBOT_LANGS, "robot_variants": ROBOT_VARIANTS,
             "codec_crf": {k: v["uses_crf"] for k, v in CODECS.items()}, "ffmpeg": ffmpeg_available()}
@@ -371,6 +381,7 @@ def main() -> None:
     if "--temp" in args:
         TEMP_DIR = Path(args[args.index("--temp") + 1])
     TEMP_DIR.mkdir(parents=True, exist_ok=True)
+    threading.Thread(target=refresh_voice_options, daemon=True).start()   # lista de voces SAPI en segundo plano
     for old in TEMP_DIR.glob("job_*"):
         shutil.rmtree(old, ignore_errors=True)
     sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
