@@ -196,8 +196,9 @@ def estimate_word_timings(tokens: Sequence[str], speech_segments: Sequence[Tuple
     return words
 
 
-async def _tts_stream(text, voice, rate, pitch, boundary, out_path):
-    comm = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch, boundary=boundary)
+async def _tts_once(text, voice, rate, pitch, boundary, out_path):
+    comm = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch, boundary=boundary,
+                                connect_timeout=30, receive_timeout=90)
     events = []
     with open(out_path, "wb") as f:
         async for ch in comm.stream():
@@ -206,6 +207,23 @@ async def _tts_stream(text, voice, rate, pitch, boundary, out_path):
             elif ch["type"] in ("WordBoundary", "SentenceBoundary"):
                 events.append(ch)
     return events
+
+
+async def _tts_stream(text, voice, rate, pitch, boundary, out_path, attempts: int = 4):
+    """Voz de Edge con reintentos: los cortes de red o del servidor de Microsoft suelen ser momentáneos."""
+    last: Exception = RuntimeError("sin respuesta")
+    for i in range(attempts):
+        try:
+            return await _tts_once(text, voice, rate, pitch, boundary, out_path)
+        except Exception as exc:  # noqa: BLE001 - timeouts, DNS, 503 del servidor...
+            last = exc
+            if i + 1 < attempts:
+                await asyncio.sleep(2 * (i + 1))
+    raise RuntimeError(
+        "No se pudo conectar con el servicio de voces de Microsoft Edge tras varios intentos. Revisa tu conexión "
+        "a internet (o el firewall/antivirus) y vuelve a intentarlo, o usa una voz «Windows ·» o la robótica, "
+        f"que funcionan sin internet. Detalle: {str(last)[:160]}"
+    ) from last
 
 
 def synthesize_with_timings(text: str, voice: str, rate: str, pitch: str, out_path: Path) -> Tuple[List[Word], str]:
